@@ -1,0 +1,168 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRoleName {
+  PATIENT
+  PROVIDER
+  CLINICAL_ADMIN
+  SUPPORT
+  BILLING
+  COMPLIANCE
+  SYSTEM_ADMIN
+}
+
+enum LicenseVerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+  EXPIRED
+}
+
+enum AuditResult {
+  SUCCESS
+  FAILURE
+}
+
+model User {
+  id          String     @id @default(uuid()) @db.Uuid
+  identityUid String     @unique @map("identity_uid")
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+  roles       UserRole[]
+  patient     Patient?
+  provider    Provider?
+  auditEvents AuditEvent[]
+
+  @@map("users")
+}
+
+model UserRole {
+  id        String       @id @default(uuid()) @db.Uuid
+  userId    String       @map("user_id") @db.Uuid
+  role      UserRoleName
+  createdAt DateTime     @default(now()) @map("created_at")
+  updatedAt DateTime     @updatedAt @map("updated_at")
+  user      User         @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, role])
+  @@index([role])
+  @@map("user_roles")
+}
+
+model Patient {
+  id                 String                      @id @default(uuid()) @db.Uuid
+  userId             String                      @unique @map("user_id") @db.Uuid
+  createdAt          DateTime                    @default(now()) @map("created_at")
+  updatedAt          DateTime                    @updatedAt @map("updated_at")
+  user               User                        @relation(fields: [userId], references: [id], onDelete: Restrict)
+  assignments        ProviderPatientAssignment[]
+  consentAcceptances ConsentAcceptance[]
+  auditEvents         AuditEvent[]
+
+  @@map("patients")
+}
+
+model Provider {
+  id          String                      @id @default(uuid()) @db.Uuid
+  userId      String                      @unique @map("user_id") @db.Uuid
+  createdAt   DateTime                    @default(now()) @map("created_at")
+  updatedAt   DateTime                    @updatedAt @map("updated_at")
+  user        User                        @relation(fields: [userId], references: [id], onDelete: Restrict)
+  licenses    ProviderLicense[]
+  assignments ProviderPatientAssignment[]
+
+  @@map("providers")
+}
+
+model ProviderLicense {
+  id                   String                    @id @default(uuid()) @db.Uuid
+  providerId           String                    @map("provider_id") @db.Uuid
+  jurisdiction         String
+  licenseNumber        String                    @map("license_number")
+  licenseType          String                    @map("license_type")
+  expiresAt            DateTime                  @map("expires_at") @db.Date
+  verificationStatus   LicenseVerificationStatus @default(PENDING) @map("verification_status")
+  verifiedAt           DateTime?                 @map("verified_at")
+  createdAt            DateTime                  @default(now()) @map("created_at")
+  updatedAt            DateTime                  @updatedAt @map("updated_at")
+  provider             Provider                  @relation(fields: [providerId], references: [id], onDelete: Restrict)
+
+  @@unique([jurisdiction, licenseNumber])
+  @@index([providerId, jurisdiction, verificationStatus])
+  @@map("provider_licenses")
+}
+
+model ProviderPatientAssignment {
+  id         String    @id @default(uuid()) @db.Uuid
+  providerId String    @map("provider_id") @db.Uuid
+  patientId  String    @map("patient_id") @db.Uuid
+  startsAt   DateTime  @map("starts_at")
+  endsAt     DateTime? @map("ends_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+  provider   Provider  @relation(fields: [providerId], references: [id], onDelete: Restrict)
+  patient    Patient   @relation(fields: [patientId], references: [id], onDelete: Restrict)
+
+  @@index([providerId, patientId, startsAt, endsAt])
+  @@map("provider_patient_assignments")
+}
+
+model ConsentDocument {
+  id          String              @id @default(uuid()) @db.Uuid
+  documentKey String              @map("document_key")
+  version     String
+  contentHash String              @map("content_hash")
+  content     String
+  effectiveAt DateTime            @map("effective_at")
+  createdAt   DateTime            @default(now()) @map("created_at")
+  updatedAt   DateTime            @updatedAt @map("updated_at")
+  acceptances ConsentAcceptance[]
+
+  @@unique([documentKey, version])
+  @@map("consent_documents")
+}
+
+model ConsentAcceptance {
+  id                String          @id @default(uuid()) @db.Uuid
+  patientId         String          @map("patient_id") @db.Uuid
+  consentDocumentId String          @map("consent_document_id") @db.Uuid
+  documentVersion   String          @map("document_version")
+  contentHash       String          @map("content_hash")
+  acceptedAt        DateTime        @map("accepted_at")
+  ipAddress         String?         @map("ip_address") @db.Inet
+  revokedAt         DateTime?       @map("revoked_at")
+  createdAt         DateTime        @default(now()) @map("created_at")
+  updatedAt         DateTime        @updatedAt @map("updated_at")
+  patient           Patient         @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  consentDocument   ConsentDocument @relation(fields: [consentDocumentId], references: [id], onDelete: Restrict)
+
+  @@index([patientId, consentDocumentId])
+  @@map("consent_acceptances")
+}
+
+model AuditEvent {
+  id            String       @id @default(uuid()) @db.Uuid
+  occurredAt    DateTime     @default(now()) @map("occurred_at")
+  actorUserId   String       @map("actor_user_id") @db.Uuid
+  actorRole     UserRoleName @map("actor_role")
+  action        String
+  resourceType  String       @map("resource_type")
+  resourceId    String       @map("resource_id") @db.Uuid
+  patientId     String?      @map("patient_id") @db.Uuid
+  requestId     String       @map("request_id") @db.Uuid
+  ipAddress     String       @map("ip_address") @db.Inet
+  result        AuditResult
+  actor         User         @relation(fields: [actorUserId], references: [id], onDelete: Restrict)
+  patient       Patient?     @relation(fields: [patientId], references: [id], onDelete: Restrict)
+
+  @@index([actorUserId, occurredAt])
+  @@index([patientId, occurredAt])
+  @@index([resourceType, resourceId, occurredAt])
+  @@map("audit_events")
+}
