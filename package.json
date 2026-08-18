@@ -1,0 +1,10 @@
+{
+  "name": "daymark-sample",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A small, dependency-free daily focus planner.",
+  "scripts": {
+    "start": "python3 -m http.server 4173",
+    "check": "node --check app.js"
+  }
+}
