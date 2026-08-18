@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="A lightweight daily focus planner." />
+    <title>Daymark — Make today count</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="ambient ambient-one"></div>
+    <div class="ambient ambient-two"></div>
+    <header class="site-header">
+      <a class="brand" href="#" aria-label="Daymark home">
+        <span class="brand-mark">D</span><span>daymark</span>
+      </a>
+      <div class="header-actions">
+        <p id="today" class="today"></p>
+        <button id="theme-toggle" class="icon-button" type="button" aria-label="Switch color theme">☼</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div>
+          <p class="eyebrow">YOUR DAILY COMPASS</p>
+          <h1>Make space for<br /><em>what matters.</em></h1>
+          <p class="intro">Choose a few meaningful things. Finish the day with less noise and more momentum.</p>
+        </div>
+        <aside class="quote-card" aria-label="Daily thought">
+          <span class="quote-mark">“</span>
+          <blockquote>Small steps, taken with intention, become remarkable journeys.</blockquote>
+          <p>— Your reminder for today</p>
+        </aside>
+      </section>
+
+      <section class="workspace" aria-labelledby="focus-heading">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">TODAY'S FOCUS</p>
+            <h2 id="focus-heading">Three things are enough.</h2>
+          </div>
+          <div class="progress-wrap">
+            <span id="progress-label">0 of 0 complete</span>
+            <div class="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+              <span id="progress-bar"></span>
+            </div>
+          </div>
+        </div>
+
+        <form id="task-form" class="task-form">
+          <label class="sr-only" for="task-input">Add a focus item</label>
+          <input id="task-input" maxlength="80" autocomplete="off" placeholder="What deserves your attention?" required />
+          <button type="submit">Add focus <span>↗</span></button>
+        </form>
+
+        <ul id="task-list" class="task-list" aria-live="polite"></ul>
+        <div id="empty-state" class="empty-state">
+          <span>✦</span>
+          <p>Your day is a blank page.</p>
+          <small>Add your first focus above.</small>
+        </div>
+      </section>
+    </main>
+
+    <footer><p>One clear day at a time.</p><span>DAYMARK · SAMPLE 01</span></footer>
+    <script src="app.js"></script>
+  </body>
+</html>
